@@ -1,5 +1,5 @@
 .{
-    .name = .gmp,
+    .name = "gmp",
     .version = "0.1.0",
     .paths = .{
         "build.zig.zon",
@@ -7,11 +7,10 @@
         "vendor",
         "LICENSE",
     },
-    .fingerprint = 0x328f606142c2788c,
     .dependencies = .{
         .gmp = .{
             .url = "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz",
-            .hash = "N-V-__8AAE5fAwHUYgLBeqNatYSKf3qBK3l8nwdpjyY8igK0",
+            .hash = "1220d46202c17aa35ab5848a7f7a812b797c9f07698f263c8a02b4ad9640a1bbe0e3",
         },
     },
 }
