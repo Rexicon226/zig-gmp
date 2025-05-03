@@ -88,6 +88,7 @@ pub fn build(b: *std.Build) !void {
             "memory.c",
             "errno.c",
             "mp_minv_tab.c",
+            "mp_clz_tab.c",
             "printf/printf.c",
             "printf/doprnt.c",
             "printf/printffuns.c",
@@ -97,6 +98,7 @@ pub fn build(b: *std.Build) !void {
             "printf/vasprintf.c",
             "printf/asprntffuns.c",
         },
+        .flags = &.{"-DCOUNT_LEADING_ZEROS_NEED_CLZ_TAB"},
     });
 
     gmp.addCSourceFiles(.{
