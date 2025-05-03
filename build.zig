@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) !void {
         .HAVE_HOST_CPU_FAMILY_powerpc = false,
         .GMP_LIMB_BITS = 64,
         .GMP_NAIL_BITS = 0,
-        .DEFN_LONG_LONG_LIMB = "#define _LONG_LONG_LIMB 1",
+        .DEFN_LONG_LONG_LIMB = .@"#define _LONG_LONG_LIMB 1",
         .LIBGMP_DLL = 0,
         .CC = "zigcc",
         .CFLAGS = "",
@@ -282,20 +282,46 @@ pub fn build(b: *std.Build) !void {
         });
     }
 
-    const asm_sources: []const []const u8 = switch (target.result.cpu.arch) {
-        .aarch64 => &.{
-            "arm64/add_n_add.s",        "arm64/add_n_sub.s",
-            "arm64/addlsh1_n_add.s",    "arm64/addlsh1_n_sub.s",
-            "arm64/addlsh1_n_rsb.s",    "arm64/addlsh2_n_add.s",
-            "arm64/addlsh2_n_sub.s",    "arm64/addlsh2_n_rsb.s",
-            "arm64/rsh1sub_n_add.s",    "arm64/rsh1sub_n_sub.s",
-            "arm64/sqr_diag_addlsh1.s", "arm64/invert_limb.s",
-            "arm64/mul_1.s",
-        },
+    const os_path, const arch_asm: struct {
+        []const u8,
+        []const []const u8,
+    } = switch (target.result.os.tag) {
+        .macos => .{ "macos", switch (target.result.cpu.arch) {
+            .aarch64 => .{ "arm64", &.{
+                "add_n_add.s",        "add_n_sub.s",
+                "addlsh1_n_add.s",    "addlsh1_n_sub.s",
+                "addlsh1_n_rsb.s",    "addlsh2_n_add.s",
+                "addlsh2_n_sub.s",    "addlsh2_n_rsb.s",
+                "rsh1sub_n_add.s",    "rsh1sub_n_sub.s",
+                "sqr_diag_addlsh1.s", "invert_limb.s",
+                "mul_1.s",
+            } },
+            else => @panic("TODO"),
+        } },
+        .linux => .{ "linux", switch (target.result.cpu.arch) {
+            .x86_64 => .{ "x86_64", &.{
+                "add_n_add.s",        "add_n_sub.s",
+                "addlsh1_n_add.s",    "addlsh1_n_rsb.s",
+                "addlsh2_n_add.s",    "addlsh2_n_rsb.s",
+                "invert_limb.s",      "invert_limb_table.s",
+                "addlsh_n_add.s",     "addlsh_n_rsb.s",
+                "rsh1add_n_add.s",    "rsh1add_n_sub.s",
+                "mul_1.s",            "mul_2.s",
+                "mode1o.s",           "sublsh1_n.s",
+                "sqr_diag_addlsh1.s",
+            } },
+            else => @panic("TODO"),
+        } },
         else => @panic("TODO"),
     };
+
+    const arch_path, const asm_sources = arch_asm;
     for (asm_sources) |source| {
-        gmp.addAssemblyFile(b.path(b.fmt("vendor/{s}", .{source})));
+        gmp.addAssemblyFile(b.path(b.fmt("vendor/{s}/{s}/{s}", .{
+            os_path,
+            arch_path,
+            source,
+        })));
     }
 }
 
@@ -312,6 +338,7 @@ fn genTable(
         .target = b.graph.host,
         .optimize = .ReleaseSafe,
     });
+    gen_fib.linkLibC();
     gen_fib.addCSourceFile(.{ .file = gmp_dep.path(b.fmt("{s}.c", .{name})) });
     const run_gen_fib = b.addRunArtifact(gen_fib);
     if (maybe_arg) |arg| run_gen_fib.addArg(arg);
@@ -441,6 +468,69 @@ const native_map = std.EnumMap(std.Target.Cpu.Arch, struct {
     HAVE_NATIVE_mpn_xor_n: ?u32 = null,
     HAVE_NATIVE_mpn_xnor_n: ?u32 = null,
 }).init(.{
+    .x86_64 = .{
+        .HAVE_NATIVE_mpn_add_n = 1,
+        .HAVE_NATIVE_mpn_add_nc = 1,
+        .HAVE_NATIVE_mpn_addlsh1_n = 1,
+        .HAVE_NATIVE_mpn_addlsh2_n = 1,
+        .HAVE_NATIVE_mpn_addlsh_n = 1,
+        .HAVE_NATIVE_mpn_addlsh1_nc = 1,
+        .HAVE_NATIVE_mpn_and_n = 1,
+        .HAVE_NATIVE_mpn_andn_n = 1,
+        .HAVE_NATIVE_mpn_bdiv_dbm1c = 1,
+        .HAVE_NATIVE_mpn_bdiv_q_1 = 1,
+        .HAVE_NATIVE_mpn_pi1_bdiv_q_1 = 1,
+        .HAVE_NATIVE_mpn_cnd_add_n = 1,
+        .HAVE_NATIVE_mpn_cnd_sub_n = 1,
+        .HAVE_NATIVE_mpn_com = 1,
+        .HAVE_NATIVE_mpn_copyd = 1,
+        .HAVE_NATIVE_mpn_copyi = 1,
+        .HAVE_NATIVE_mpn_div_qr_1n_pi1 = 1,
+        .HAVE_NATIVE_mpn_divexact_1 = 1,
+        .HAVE_NATIVE_mpn_divrem_1 = 1,
+        .HAVE_NATIVE_mpn_divrem_2 = 1,
+        .HAVE_NATIVE_mpn_gcd_11 = 1,
+        .HAVE_NATIVE_mpn_gcd_22 = 1,
+        .HAVE_NATIVE_mpn_hamdist = 1,
+        .HAVE_NATIVE_mpn_invert_limb = 1,
+        .HAVE_NATIVE_mpn_ior_n = 1,
+        .HAVE_NATIVE_mpn_iorn_n = 1,
+        .HAVE_NATIVE_mpn_lshift = 1,
+        .HAVE_NATIVE_mpn_lshiftc = 1,
+        .HAVE_NATIVE_mpn_mod_1_1p = 1,
+        .HAVE_NATIVE_mpn_mod_1s_2p = 1,
+        .HAVE_NATIVE_mpn_mod_1s_4p = 1,
+        .HAVE_NATIVE_mpn_mod_34lsub1 = 1,
+        .HAVE_NATIVE_mpn_modexact_1_odd = 1,
+        .HAVE_NATIVE_mpn_modexact_1c_odd = 1,
+        .HAVE_NATIVE_mpn_mul_1 = 1,
+        .HAVE_NATIVE_mpn_mul_1c = 1,
+        .HAVE_NATIVE_mpn_mul_2 = 1,
+        .HAVE_NATIVE_mpn_mul_basecase = 1,
+        .HAVE_NATIVE_mpn_mullo_basecase = 1,
+        .HAVE_NATIVE_mpn_nand_n = 1,
+        .HAVE_NATIVE_mpn_nior_n = 1,
+        .HAVE_NATIVE_mpn_popcount = 1,
+        .HAVE_NATIVE_mpn_preinv_divrem_1 = 1,
+        .HAVE_NATIVE_mpn_rsblsh1_n = 1,
+        .HAVE_NATIVE_mpn_rsblsh2_n = 1,
+        .HAVE_NATIVE_mpn_rsblsh_n = 1,
+        .HAVE_NATIVE_mpn_rsblsh1_nc = 1,
+        .HAVE_NATIVE_mpn_rsh1add_n = 1,
+        .HAVE_NATIVE_mpn_rsh1add_nc = 1,
+        .HAVE_NATIVE_mpn_rsh1sub_n = 1,
+        .HAVE_NATIVE_mpn_rsh1sub_nc = 1,
+        .HAVE_NATIVE_mpn_rshift = 1,
+        .HAVE_NATIVE_mpn_sbpi1_bdiv_r = 1,
+        .HAVE_NATIVE_mpn_sqr_basecase = 1,
+        .HAVE_NATIVE_mpn_sqr_diag_addlsh1 = 1,
+        .HAVE_NATIVE_mpn_sub_n = 1,
+        .HAVE_NATIVE_mpn_sub_nc = 1,
+        .HAVE_NATIVE_mpn_sublsh1_n = 1,
+        .HAVE_NATIVE_mpn_sublsh1_nc = 1,
+        .HAVE_NATIVE_mpn_xor_n = 1,
+        .HAVE_NATIVE_mpn_xnor_n = 1,
+    },
     .aarch64 = .{
         .HAVE_NATIVE_mpn_add_n = 1,
         .HAVE_NATIVE_mpn_add_nc = 1,

@@ -36,7 +36,7 @@ ___gmpn_invert_limb:
 	ret
 	
 
-		.section	__TEXT,__const
+	.section	__TEXT,__const
 	.align	1
 	
 	
