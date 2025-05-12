@@ -1,3 +1,4 @@
 .zig-cache/
 zig-out/
 .vscode/
+gmp-6.3.0
