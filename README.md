@@ -3,7 +3,7 @@
 
 This library provides a wrapper around libgmp for use in the Zig build system.
 
-Zig version required: 0.14.0
+Zig version required: 0.15.0
 
 Libgmp version packaged: 6.3.0
 
