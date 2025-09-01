@@ -5,10 +5,14 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const gmp_dep = b.dependency("gmp", .{});
-    const gmp = b.addStaticLibrary(.{
+
+    const gmp = b.addLibrary(.{
+        .linkage = .static,
         .name = "gmp",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     b.installArtifact(gmp);
 
@@ -346,8 +350,10 @@ fn genTable(
 ) !std.Build.LazyPath {
     const gen_fib = b.addExecutable(.{
         .name = name,
-        .target = b.graph.host,
-        .optimize = .ReleaseSafe,
+        .root_module = b.createModule(.{
+            .target = b.graph.host,
+            .optimize = .ReleaseSafe,
+        }),
     });
     gen_fib.linkLibC();
     gen_fib.addCSourceFile(.{ .file = gmp_dep.path(b.fmt("{s}.c", .{name})) });
@@ -595,7 +601,7 @@ fn makeConfigHeader(
     const t = target.result;
 
     const config = b.addConfigHeader(.{
-        .style = .{ .autoconf = gmp_dep.path("config.in") },
+        .style = .{ .autoconf_undef = gmp_dep.path("config.in") },
         .include_path = "config.h",
     }, .{
         .HAVE_ALARM = 1,
