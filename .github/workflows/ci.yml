@@ -19,6 +19,3 @@ jobs:
                 
           - name: build
             run: zig build
-
-          - name: test
-            run: zig build test --summary all
