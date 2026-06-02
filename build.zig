@@ -6,15 +6,12 @@ pub fn build(b: *std.Build) !void {
 
     const gmp_dep = b.dependency("gmp", .{});
 
-    const gmp = b.addLibrary(.{
-        .linkage = .static,
-        .name = "gmp",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-        }),
+    const gmp = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+        .link_libcpp = true,
     });
-    b.installArtifact(gmp);
 
     const gmp_header = b.addConfigHeader(.{
         .style = .{ .cmake = gmp_dep.path("gmp-h.in") },
@@ -32,7 +29,6 @@ pub fn build(b: *std.Build) !void {
         .CFLAGS = "",
     });
     gmp.addConfigHeader(gmp_header);
-    gmp.installConfigHeader(gmp_header);
 
     const mparam_path = switch (target.result.cpu.arch) {
         .x86_64 => "mpn/x86_64/",
@@ -77,8 +73,6 @@ pub fn build(b: *std.Build) !void {
         "trialdivtab.h",
     );
 
-    gmp.linkLibC();
-    gmp.linkLibCpp();
     gmp.addIncludePath(gmp_dep.path("."));
 
     const config = makeConfigHeader(b, gmp_dep, target);
@@ -338,6 +332,14 @@ pub fn build(b: *std.Build) !void {
             source,
         })));
     }
+
+    const gmp_lib = b.addLibrary(.{
+        .linkage = .static,
+        .name = "gmp",
+        .root_module = gmp,
+    });
+    b.installArtifact(gmp_lib);
+    gmp_lib.installConfigHeader(gmp_header);
 }
 
 fn genTable(
@@ -353,15 +355,15 @@ fn genTable(
         .root_module = b.createModule(.{
             .target = b.graph.host,
             .optimize = .ReleaseSafe,
+            .link_libc = true,
         }),
     });
-    gen_fib.linkLibC();
-    gen_fib.addCSourceFile(.{ .file = gmp_dep.path(b.fmt("{s}.c", .{name})) });
+    gen_fib.root_module.addCSourceFile(.{ .file = gmp_dep.path(b.fmt("{s}.c", .{name})) });
     const run_gen_fib = b.addRunArtifact(gen_fib);
     if (maybe_arg) |arg| run_gen_fib.addArg(arg);
     if (maybe_limb_bits) |limb_bits| run_gen_fib.addArg(b.fmt("{d}", .{limb_bits}));
     if (maybe_nail_bits) |nail_bits| run_gen_fib.addArg(b.fmt("{d}", .{nail_bits}));
-    return run_gen_fib.captureStdOut();
+    return run_gen_fib.captureStdOut(.{});
 }
 
 const native_map = std.EnumMap(std.Target.Cpu.Arch, struct {
